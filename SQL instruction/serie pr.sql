@@ -113,3 +113,31 @@ BEGIN
             SET resultat = num1 % num2;
     END
 END;
+
+
+/* souloution 2 */
+
+
+ROP PROCEDURE IF EXISTS ope;
+DELIMITER $$ 
+CREATE PROCEDURE ope(IN nb1 INT, in operation varchar(1),in nb2 int , OUT p BIGINT)
+BEGIN
+    DECLARE result varchar(50) DEFAULT null;
+if(operation='+') then 
+	set result = nb1+nb2;
+elseif(operation='-') then 
+	set result = nb1-nb2;
+elseif(operation='*') then 
+	set result = nb1*nb2;
+elseif(operation='/') then
+	if (nb2>0) then 
+		set result = nb1/nb2;
+	else set result = 'erreur div / 0';
+	end if;
+end if;
+  set p = result;
+END $$
+DELIMITER ;
+
+CALL ope(10,"/",2, @p);
+SELECT @p;
