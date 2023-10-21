@@ -141,3 +141,124 @@ DELIMITER ;
 
 CALL ope(10,"/",2, @p);
 SELECT @p;
+
+/*Exercice 6 */
+USE YourDatabaseName; -- Replace YourDatabaseName with your actual database name
+
+-- PS1
+CREATE PROCEDURE PS1_ListeIngredients
+AS
+BEGIN
+    SELECT I.NumIng, I.NomIng, F.RSFou AS RaisonSocialeFournisseur
+    FROM Ingredients I
+    JOIN Fournisseur F ON I.NumFou = F.NumFou;
+END;
+
+-- PS2
+CREATE PROCEDURE PS2_InfoRecette
+AS
+BEGIN
+    SELECT CR.NumRec, COUNT(CR.NumIng) AS NombreIngredients, SUM(I.PUIng * CR.QteUtilisee) AS MontantRecette
+    FROM Composition_Recette CR
+    JOIN Ingredients I ON CR.NumIng = I.NumIng
+    GROUP BY CR.NumRec;
+END;
+
+-- PS3
+CREATE PROCEDURE PS3_RecettesPlus10Ingredients
+AS
+BEGIN
+    SELECT R.NumRec, R.NomRec
+    FROM Recettes R
+    JOIN Composition_Recette CR ON R.NumRec = CR.NumRec
+    GROUP BY R.NumRec, R.NomRec
+    HAVING COUNT(CR.NumIng) > 10;
+END;
+
+-- PS4
+CREATE PROCEDURE PS4_NomRecette
+    @NumRec INT
+AS
+BEGIN
+    SELECT NomRec
+    FROM Recettes
+    WHERE NumRec = @NumRec;
+END;
+
+-- PS5
+CREATE PROCEDURE PS5_MeilleurIngredient
+    @NumRec INT
+AS
+BEGIN
+    DECLARE @Ingredient NVARCHAR(100);
+    SELECT TOP 1 @Ingredient = I.NomIng
+    FROM Composition_Recette CR
+    JOIN Ingredients I ON CR.NumIng = I.NumIng
+    WHERE CR.NumRec = @NumRec
+    ORDER BY I.PUIng;
+    IF (@Ingredient IS NULL)
+        SELECT 'Aucun ingrédient associé' AS Result;
+    ELSE
+        SELECT @Ingredient AS Result;
+END;
+
+-- PS6
+CREATE PROCEDURE PS6_ListeIngredientsPourRecette
+    @NumRec INT
+AS
+BEGIN
+    SELECT I.NomIng, CR.QteUtilisee, I.PUIng
+    FROM Composition_Recette CR
+    JOIN Ingredients I ON CR.NumIng = I.NumIng
+    WHERE CR.NumRec = @NumRec;
+END;
+
+-- PS7
+CREATE PROCEDURE PS7_RecetteDetails
+    @NumRec INT
+AS
+BEGIN
+    EXEC PS4_NomRecette @NumRec;
+    EXEC PS6_ListeIngredientsPourRecette @NumRec;
+    EXEC PS5_MeilleurIngredient @NumRec;
+END;
+
+-- PS8
+CREATE PROCEDURE PS8_DetailsFournisseur
+    @NumFou INT
+AS
+BEGIN
+    IF NOT EXISTS (SELECT * FROM Fournisseur WHERE NumFou = @NumFou)
+        SELECT 'Aucun fournisseur ne porte ce numéro' AS Result;
+    ELSE
+    BEGIN
+        IF NOT EXISTS (SELECT * FROM Ingredients WHERE NumFou = @NumFou)
+        BEGIN
+            SELECT 'Ce fournisseur n''a aucun ingrédient associé. Il sera supprimé' AS Result;
+            DELETE FROM Fournisseur WHERE NumFou = @NumFou;
+        END
+        ELSE
+            SELECT NumIng, NomIng FROM Ingredients WHERE NumFou = @NumFou;
+    END
+END;
+
+-- PS9
+CREATE PROCEDURE PS9_DetailsRecette
+    @NumRec INT
+AS
+BEGIN
+    DECLARE @PrixRevient INT;
+    SELECT @PrixRevient = SUM(CR.QteUtilisee * I.PUIng)
+    FROM Composition_Recette CR
+    JOIN Ingredients I ON CR.NumIng = I.NumIng
+    WHERE CR.NumRec = @NumRec;
+
+    SELECT 'Recette : ' + R.NomRec + ', temps de préparation : ' + CONVERT(NVARCHAR(10), R.TempsPreparation) AS Message,
+        I.NomIng, CR.QteUtilisee AS Quantite, R.MethodePreparation, 
+        CASE WHEN @PrixRevient < 50 THEN 'Prix intéressant' ELSE '' END AS Commentaire
+    FROM Recettes R
+    JOIN Composition_Recette CR ON R.NumRec = CR.NumRec
+    JOIN Ingredients I ON CR.NumIng = I.NumIng
+    WHERE R.NumRec = @NumRec;
+END;
+
