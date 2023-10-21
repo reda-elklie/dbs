@@ -64,22 +64,24 @@ END;
 
 -- Exercice 4
 -- Retourner le factoriel d'un nombre entier
-CREATE PROCEDURE CalculerFactoriel
-    nombre INT,
-    factoriel BIGINT OUTPUT
-AS
+DROP PROCEDURE IF EXISTS facto;
+DELIMITER $$ 
+CREATE PROCEDURE facto(IN nombre INT, OUT f BIGINT)
 BEGIN
-    DECLARE resultat BIGINT = 1;
-    DECLARE i INT = 1;
-    
-    WHILE i <= nombre
-    BEGIN
-        SET resultat = resultat * i;
-        SET i = i + 1;
-    END
+    DECLARE result BIGINT DEFAULT 1;
+    DECLARE i INT DEFAULT 1;
 
-    SELECT factoriel = resultat;
-END;
+    WHILE i <= nombre DO
+        SET result = result * i;
+        SET i = i + 1;
+    END WHILE;
+
+    SET f = result;
+END $$
+DELIMITER ;
+
+CALL facto(1, @f);
+SELECT @f;
 
 -- Exercice 5
 -- Procédure pour effectuer des opérations arithmétiques simples
